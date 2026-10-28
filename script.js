@@ -7,10 +7,10 @@
   const viewerImage = document.getElementById("viewer-image");
   const viewerCaption = document.getElementById("viewer-caption");
   const closeButton = document.getElementById("viewer-close");
-  const prevButton = document.getElementById("viewer-prev");
-  const nextButton = document.getElementById("viewer-next");
   let activeFilter = "all";
   let currentCardIndex = 0;
+  let touchStartX = 0;
+  let touchStartY = 0;
 
   function updateCards() {
     const query = searchInput.value.trim().toLowerCase();
@@ -94,8 +94,19 @@
   });
   searchInput.addEventListener("input", updateCards);
   closeButton.addEventListener("click", () => viewer.close());
-  prevButton.addEventListener("click", () => movePhoto(-1));
-  nextButton.addEventListener("click", () => movePhoto(1));
+  viewer.addEventListener("touchstart", event => {
+    if (!viewer.open || !event.changedTouches.length) return;
+    touchStartX = event.changedTouches[0].clientX;
+    touchStartY = event.changedTouches[0].clientY;
+  }, { passive: true });
+  viewer.addEventListener("touchend", event => {
+    if (!viewer.open || !event.changedTouches.length) return;
+    const deltaX = event.changedTouches[0].clientX - touchStartX;
+    const deltaY = event.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+      movePhoto(deltaX < 0 ? 1 : -1);
+    }
+  }, { passive: true });
   viewer.addEventListener("click", event => {
     if (event.target === viewer) viewer.close();
   });
