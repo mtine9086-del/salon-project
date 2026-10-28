@@ -9,8 +9,9 @@
   const closeButton = document.getElementById("viewer-close");
   let activeFilter = "all";
   let currentCardIndex = 0;
-  let touchStartX = 0;
-  let touchStartY = 0;
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  let swipePointerId = null;
 
   function updateCards() {
     const query = searchInput.value.trim().toLowerCase();
@@ -94,18 +95,26 @@
   });
   searchInput.addEventListener("input", updateCards);
   closeButton.addEventListener("click", () => viewer.close());
-  viewer.addEventListener("touchstart", event => {
-    if (!viewer.open || !event.changedTouches.length) return;
-    touchStartX = event.changedTouches[0].clientX;
-    touchStartY = event.changedTouches[0].clientY;
+  // Pointer events cover modern Android/iPhone touch screens and stylus input.
+  viewer.addEventListener("pointerdown", event => {
+    if (!viewer.open || event.isPrimary === false || event.button !== 0) return;
+    swipePointerId = event.pointerId;
+    swipeStartX = event.clientX;
+    swipeStartY = event.clientY;
   }, { passive: true });
-  viewer.addEventListener("touchend", event => {
-    if (!viewer.open || !event.changedTouches.length) return;
-    const deltaX = event.changedTouches[0].clientX - touchStartX;
-    const deltaY = event.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.25) {
+
+  viewer.addEventListener("pointerup", event => {
+    if (!viewer.open || swipePointerId !== event.pointerId) return;
+    const deltaX = event.clientX - swipeStartX;
+    const deltaY = event.clientY - swipeStartY;
+    swipePointerId = null;
+    if (Math.abs(deltaX) >= 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
       movePhoto(deltaX < 0 ? 1 : -1);
     }
+  }, { passive: true });
+
+  viewer.addEventListener("pointercancel", () => {
+    swipePointerId = null;
   }, { passive: true });
   viewer.addEventListener("click", event => {
     if (event.target === viewer) viewer.close();
