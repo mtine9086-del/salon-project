@@ -24,3 +24,10 @@
 /* Swipe-first fullscreen photo navigation */
 .viewer-hint{margin:0;color:rgba(255,255,255,.62);font:500 9px var(--sans);letter-spacing:.16em;text-align:center}
 .image-viewer{touch-action:pan-y}
+
+/* Keep the swipe surface large and leave room for both viewer captions. */
+.image-viewer{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.viewer-figure{touch-action:pan-y}
+.viewer-figure img{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}
+.viewer-hint{padding-top:4px}
+@media(max-width:520px){.viewer-figure img{max-height:calc(100% - 68px)}.viewer-hint{font-size:8px;letter-spacing:.1em}}
