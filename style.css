@@ -20,3 +20,7 @@
 /* Clear mobile-friendly hint that style photos open in a large viewer */
 .style-image::before{content:"TAP TO VIEW  ↗";position:absolute;z-index:1;left:10px;bottom:11px;color:#fff;font:700 8px var(--sans);letter-spacing:.13em;text-shadow:0 1px 5px rgba(0,0,0,.55);pointer-events:none}
 @media(min-width:801px){.style-image::before{opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s}.style-card:hover .style-image::before,.style-image:focus-visible::before{opacity:1;transform:translateY(0)}}
+
+/* Swipe-first fullscreen photo navigation */
+.viewer-hint{margin:0;color:rgba(255,255,255,.62);font:500 9px var(--sans);letter-spacing:.16em;text-align:center}
+.image-viewer{touch-action:pan-y}
