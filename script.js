@@ -3,59 +3,76 @@
   const filterButtons = [...document.querySelectorAll(".filter-button")];
   const searchInput = document.getElementById("style-search");
   const noResults = document.getElementById("no-results");
-  const selectionTitle = document.getElementById("selection-title");
-  const selectionDescription = document.getElementById("selection-description");
-  const shareButton = document.getElementById("share-selection");
-  const clearButton = document.getElementById("clear-selection");
-  const toast = document.getElementById("toast");
-  const selected = new Map();
+  const viewer = document.getElementById("image-viewer");
+  const viewerImage = document.getElementById("viewer-image");
+  const viewerCaption = document.getElementById("viewer-caption");
+  const closeButton = document.getElementById("viewer-close");
+  const prevButton = document.getElementById("viewer-prev");
+  const nextButton = document.getElementById("viewer-next");
   let activeFilter = "all";
-  let toastTimer;
-
-  function showToast(message) {
-    toast.textContent = message;
-    toast.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
-  }
+  let currentCardIndex = 0;
 
   function updateCards() {
     const query = searchInput.value.trim().toLowerCase();
     let visible = 0;
     cards.forEach(card => {
+      const description = card.querySelector(".style-info p").textContent.toLowerCase();
       const matchesCategory = activeFilter === "all" || card.dataset.category === activeFilter;
-      const matchesSearch = card.dataset.name.toLowerCase().includes(query) ||
-        card.querySelector(".style-info p").textContent.toLowerCase().includes(query);
-      const show = matchesCategory && matchesSearch;
-      card.hidden = !show;
-      if (show) visible++;
+      const matchesSearch = card.dataset.name.toLowerCase().includes(query) || description.includes(query);
+      card.hidden = !(matchesCategory && matchesSearch);
+      if (!card.hidden) visible++;
     });
     document.querySelectorAll(".category-heading").forEach(heading => {
-      const nextGrid = heading.nextElementSibling;
-      if (nextGrid && nextGrid.classList.contains("style-grid")) {
-        heading.hidden = ![...nextGrid.querySelectorAll(".style-card")].some(card => !card.hidden);
+      const grid = heading.nextElementSibling;
+      if (grid && grid.classList.contains("style-grid")) {
+        heading.hidden = ![...grid.querySelectorAll(".style-card")].some(card => !card.hidden);
       }
     });
     noResults.hidden = visible > 0;
   }
 
-  function updateSelection() {
-    const names = [...selected.keys()];
-    const count = names.length;
-    selectionTitle.textContent = count ? names.join(" · ") : "Your chosen styles will appear here";
-    selectionDescription.textContent = count
-      ? count === 1 ? "1 style selected. Show this reference to your barber." : count + " styles selected. Show these references to your barber."
-      : "Select one or more styles, then show your selection to your barber.";
-    shareButton.disabled = count === 0;
-    clearButton.hidden = count === 0;
-    cards.forEach(card => {
-      const button = card.querySelector(".select-style");
-      const isSelected = selected.has(card.dataset.name);
-      button.setAttribute("aria-pressed", String(isSelected));
-      button.textContent = isSelected ? "✓ Selected" : "＋ Select";
-      card.classList.toggle("is-selected", isSelected);
-    });
+  function photoUrl(card) {
+    const image = card.querySelector(".style-image");
+    const background = getComputedStyle(image).backgroundImage;
+    const match = background.match(/url\(["']?(.*?)["']?\)/);
+    return match ? match[1] : "";
   }
+
+  function visibleCards() {
+    return cards.filter(card => !card.hidden);
+  }
+
+  function showCard(card) {
+    if (!card) return;
+    currentCardIndex = cards.indexOf(card);
+    viewerImage.src = photoUrl(card);
+    viewerImage.alt = card.dataset.name + " hairstyle reference photo";
+    viewerCaption.textContent = card.dataset.name + " · " + (card.dataset.category === "hair" ? "Haircut" : "Beard style");
+    if (!viewer.open) viewer.showModal();
+  }
+
+  function movePhoto(direction) {
+    const visible = visibleCards();
+    if (!visible.length) return;
+    let index = visible.indexOf(cards[currentCardIndex]);
+    if (index < 0) index = 0;
+    index = (index + direction + visible.length) % visible.length;
+    showCard(visible[index]);
+  }
+
+  cards.forEach(card => {
+    const image = card.querySelector(".style-image");
+    image.setAttribute("role", "button");
+    image.setAttribute("tabindex", "0");
+    image.setAttribute("aria-label", "View " + card.dataset.name + " photo full screen");
+    image.addEventListener("click", () => showCard(card));
+    image.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showCard(card);
+      }
+    });
+  });
 
   filterButtons.forEach(button => {
     button.addEventListener("click", () => {
@@ -68,42 +85,17 @@
       updateCards();
     });
   });
-
   searchInput.addEventListener("input", updateCards);
-
-  cards.forEach(card => {
-    card.querySelector(".select-style").addEventListener("click", () => {
-      const name = card.dataset.name;
-      if (selected.has(name)) selected.delete(name);
-      else selected.set(name, card.dataset.category);
-      updateSelection();
-      if (selected.has(name)) showToast(name + " added to your selection");
-      else showToast(name + " removed from your selection");
-    });
+  closeButton.addEventListener("click", () => viewer.close());
+  prevButton.addEventListener("click", () => movePhoto(-1));
+  nextButton.addEventListener("click", () => movePhoto(1));
+  viewer.addEventListener("click", event => {
+    if (event.target === viewer) viewer.close();
   });
-
-  clearButton.addEventListener("click", () => {
-    selected.clear();
-    updateSelection();
-    showToast("Your selection has been cleared");
+  document.addEventListener("keydown", event => {
+    if (!viewer.open) return;
+    if (event.key === "ArrowLeft") movePhoto(-1);
+    if (event.key === "ArrowRight") movePhoto(1);
   });
-
-  shareButton.addEventListener("click", async () => {
-    const names = [...selected.keys()];
-    if (!names.length) return;
-    const message = "My salon style references: " + names.join(", ") + ". Please use these as inspiration for my haircut/beard style.";
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "My salon style selection", text: message, url: window.location.href });
-        return;
-      } catch (error) {
-        if (error && error.name === "AbortError") return;
-      }
-    }
-    const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(message + " " + window.location.href);
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-  });
-
   updateCards();
-  updateSelection();
 })();
