@@ -45,11 +45,18 @@
   function showCard(card) {
     if (!card) return;
     currentCardIndex = cards.indexOf(card);
-    viewerImage.src = photoUrl(card);
+    const url = photoUrl(card);
+    viewerImage.removeAttribute("src");
     viewerImage.alt = card.dataset.name + " hairstyle reference photo";
+    if (url) viewerImage.src = url;
     viewerCaption.textContent = card.dataset.name + " · " + (card.dataset.category === "hair" ? "Haircut" : "Beard style");
     if (!viewer.open) viewer.showModal();
   }
+
+  viewerImage.addEventListener("error", () => {
+    viewerCaption.textContent = "Photo unavailable — please close and try another style.";
+    viewerImage.alt = "This style photo could not be loaded.";
+  });
 
   function movePhoto(direction) {
     const visible = visibleCards();
