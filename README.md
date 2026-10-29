@@ -1,31 +1,15 @@
-# Salon Style Menu — Demo Project
+# The Style Menu — Integrated Salon Project
 
-A mobile-friendly QR salon catalogue where customers can browse haircut and beard-style examples, select their preferred look, and share the selection with their barber.
+This package integrates the supplied cleaned haircut posters into a mobile-friendly static gallery.
 
-## Included in this sample
+## Files
+- `index.html` — page structure and 12 hairstyle cards
+- `style.css` — responsive styling and fullscreen viewer
+- `script.js` — search, category filters, fullscreen image viewer, swipe and keyboard navigation
+- `images/` — supplied 12 unique WebP haircut poster files plus asset manifest
 
-- Responsive layout for mobile phones and desktop
-- Haircut and beard-style galleries with sample photos loaded from Unsplash
-- Search and category filters
-- Select one or more styles
-- Share selection using the phone's share menu or WhatsApp
-- No login, backend, database, or paid API required
+## Run locally
+Open `index.html` in a browser. For GitHub Pages, upload the contents of this folder to the root of the `salon-project` repository (preserve the `images/` directory).
 
-## Project files
-
-- `index.html` — page structure and sample catalogue
-- `style.css` — design and responsive layout
-- `script.js` — search, filters, selection, and sharing
-- `images/` — reserved for salon-approved photos you may add later
-
-## Preview / publishing
-
-This is a demo, not a finished salon's official menu. The current photos are online sample images and require an internet connection. Replace them with salon-approved photos before using the catalogue for a real business. Add the real salon name, prices, address, and contact details only after confirming them with the owner.
-
-To publish, choose a static host that permits your intended commercial use, such as Cloudflare Pages. Once the public URL works on a phone, create a QR code that points to that exact URL and test it with a second phone.
-
-## Notes
-
-- No customer information is collected by this demo.
-- The share button sends the names of the selected styles and the catalogue link; the customer chooses whether to share.
-- Check image licensing and the host's terms before commercial launch.
+## Important
+This package is prepared locally; it has not been pushed to GitHub automatically. The supplied ZIP contained 12 unique images, with multiple variants for some styles. It does not contain all 18 requested haircut categories yet.
