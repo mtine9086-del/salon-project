@@ -9,93 +9,71 @@
   const closeButton = document.getElementById("viewer-close");
   const prevButton = document.getElementById("viewer-prev");
   const nextButton = document.getElementById("viewer-next");
-  let activeFilter = "all";
-  let currentCardIndex = 0;
-
-  function updateCards() {
-    const query = searchInput.value.trim().toLowerCase();
-    let visible = 0;
-    cards.forEach(card => {
-      const description = card.querySelector(".style-info p").textContent.toLowerCase();
-      const matchesCategory = activeFilter === "all" || card.dataset.category === activeFilter;
-      const matchesSearch = card.dataset.name.toLowerCase().includes(query) || description.includes(query);
-      card.hidden = !(matchesCategory && matchesSearch);
-      if (!card.hidden) visible++;
-    });
-    document.querySelectorAll(".category-heading").forEach(heading => {
-      const grid = heading.nextElementSibling;
-      if (grid && grid.classList.contains("style-grid")) {
-        heading.hidden = ![...grid.querySelectorAll(".style-card")].some(card => !card.hidden);
-      }
-    });
-    noResults.hidden = visible > 0;
-  }
-
-  function photoUrl(card) {
-    const image = card.querySelector(".style-image");
-    const background = getComputedStyle(image).backgroundImage;
-    const match = background.match(/url\(["']?(.*?)["']?\)/);
-    return match ? match[1] : "";
-  }
+  let activeFilter = "all", currentIndex = 0, startX = 0, startY = 0, pointerId = null;
 
   function visibleCards() {
     return cards.filter(card => !card.hidden);
   }
-
+  function updateCards() {
+    const query = searchInput.value.trim().toLowerCase();
+    let count = 0;
+    cards.forEach(card => {
+      const matchesQuery = (card.dataset.name + " " + card.querySelector(".style-info p").textContent).toLowerCase().includes(query);
+      const matchesFilter = activeFilter === "all" || card.dataset.category === activeFilter;
+      card.hidden = !(matchesQuery && matchesFilter);
+      if (!card.hidden) count++;
+    });
+    noResults.hidden = count > 0;
+  }
   function showCard(card) {
     if (!card) return;
-    currentCardIndex = cards.indexOf(card);
-    viewerImage.src = photoUrl(card);
-    viewerImage.alt = card.dataset.name + " hairstyle reference photo";
-    viewerCaption.textContent = card.dataset.name + " · " + (card.dataset.category === "hair" ? "Haircut" : "Beard style");
+    const visible = visibleCards();
+    currentIndex = visible.indexOf(card);
+    viewerImage.src = card.querySelector(".style-image").dataset.src;
+    viewerImage.alt = card.querySelector("img").alt;
+    viewerCaption.textContent = card.dataset.name;
     if (!viewer.open) viewer.showModal();
   }
-
-  function movePhoto(direction) {
+  function move(direction) {
     const visible = visibleCards();
     if (!visible.length) return;
-    let index = visible.indexOf(cards[currentCardIndex]);
-    if (index < 0) index = 0;
-    index = (index + direction + visible.length) % visible.length;
-    showCard(visible[index]);
+    currentIndex = (currentIndex + direction + visible.length) % visible.length;
+    showCard(visible[currentIndex]);
   }
-
   cards.forEach(card => {
-    const image = card.querySelector(".style-image");
-    image.setAttribute("role", "button");
-    image.setAttribute("tabindex", "0");
-    image.setAttribute("aria-label", "View " + card.dataset.name + " photo full screen");
-    image.addEventListener("click", () => showCard(card));
-    image.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        showCard(card);
-      }
-    });
+    const button = card.querySelector(".style-image");
+    button.addEventListener("click", () => showCard(card));
   });
-
-  filterButtons.forEach(button => {
-    button.addEventListener("click", () => {
-      activeFilter = button.dataset.filter;
-      filterButtons.forEach(item => {
-        const active = item === button;
-        item.classList.toggle("active", active);
-        item.setAttribute("aria-pressed", String(active));
-      });
-      updateCards();
+  filterButtons.forEach(button => button.addEventListener("click", () => {
+    activeFilter = button.dataset.filter;
+    filterButtons.forEach(b => {
+      const active = b === button;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", String(active));
     });
-  });
+    updateCards();
+  }));
   searchInput.addEventListener("input", updateCards);
   closeButton.addEventListener("click", () => viewer.close());
-  prevButton.addEventListener("click", () => movePhoto(-1));
-  nextButton.addEventListener("click", () => movePhoto(1));
-  viewer.addEventListener("click", event => {
-    if (event.target === viewer) viewer.close();
-  });
-  document.addEventListener("keydown", event => {
+  prevButton.addEventListener("click", () => move(-1));
+  nextButton.addEventListener("click", () => move(1));
+  viewer.addEventListener("pointerdown", e => {
+    if (!viewer.open || e.isPrimary === false || e.button !== 0) return;
+    pointerId = e.pointerId; startX = e.clientX; startY = e.clientY;
+  }, {passive:true});
+  viewer.addEventListener("pointerup", e => {
+    if (!viewer.open || pointerId !== e.pointerId) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY; pointerId = null;
+    if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.2) move(dx < 0 ? 1 : -1);
+  }, {passive:true});
+  viewer.addEventListener("pointercancel", () => pointerId = null, {passive:true});
+  viewer.addEventListener("click", e => { if (e.target === viewer) viewer.close(); });
+  document.addEventListener("keydown", e => {
     if (!viewer.open) return;
-    if (event.key === "ArrowLeft") movePhoto(-1);
-    if (event.key === "ArrowRight") movePhoto(1);
+    if (e.key === "ArrowLeft") move(-1);
+    if (e.key === "ArrowRight") move(1);
+    if (e.key === "Escape") viewer.close();
   });
+  viewerImage.addEventListener("error", () => { viewerCaption.textContent = "Image could not be loaded."; });
   updateCards();
 })();
